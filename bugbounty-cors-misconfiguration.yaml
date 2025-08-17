@@ -1,0 +1,53 @@
+id: bugbounty-cors-misconfiguration
+
+info:
+  name: CORS Misconfiguration
+  author: Justin Washek
+  severity: medium
+  description: |
+    Tests for CORS misconfigurations that could allow unauthorized cross-origin requests
+  tags: cors,misconfiguration,bugbounty
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}"
+    
+    headers:
+      Origin: "https://{{interactsh-url}}"
+
+  - method: GET
+    path:
+      - "{{BaseURL}}"
+    
+    headers:
+      Origin: "null"
+
+  - method: GET
+    path:
+      - "{{BaseURL}}"
+    
+    headers:
+      Origin: "https://evil.com"
+
+    matchers-condition: or
+    matchers:
+      - type: regex
+        part: header
+        regex:
+          - "(?i)access-control-allow-origin.*{{interactsh-url}}"
+          - "(?i)access-control-allow-origin.*null"
+          - "(?i)access-control-allow-origin.*evil\\.com"
+          - "(?i)access-control-allow-origin.*\\*"
+        condition: and
+        
+      - type: word
+        part: header
+        words:
+          - "access-control-allow-credentials: true"
+
+    extractors:
+      - type: regex
+        part: header
+        regex:
+          - "(?i)(access-control-allow-.*)"

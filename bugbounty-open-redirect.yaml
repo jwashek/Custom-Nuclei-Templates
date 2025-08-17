@@ -1,0 +1,39 @@
+id: bugbounty-open-redirect
+
+info:
+  name: Open Redirect via Params
+  author: Justin Washek
+  severity: medium
+  description: |
+    Tests for open redirect vulnerabilities using unique callback domains
+  tags: redirect,fuzzing,bugbounty
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}"
+
+    fuzzing:
+      - part: query
+        mode: single
+        fuzz:
+          - "http://{{interactsh-url}}"
+          - "https://{{interactsh-url}}"
+          - "//{{interactsh-url}}"
+          - "{{interactsh-url}}"
+          - "http://{{interactsh-url}}/"
+          - "https://{{interactsh-url}}/"
+          - "//{{interactsh-url}}/"
+
+    matchers:
+      - type: dsl
+        dsl:
+          - 'status_code >= 300 && status_code < 400'
+          - 'contains(header, "{{interactsh-url}}")'
+        condition: and
+
+    extractors:
+      - type: kval
+        part: interactsh_request
+        kval:
+          - raw-request

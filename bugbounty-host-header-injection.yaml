@@ -1,0 +1,43 @@
+id: bugbounty-host-header-injection
+
+info:
+  name: Host Header Injection
+  author: Justin Washek
+  severity: medium
+  description: |
+    Tests for Host header injection vulnerabilities that could lead to password reset poisoning
+  tags: host-header,injection,bugbounty
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}"
+    
+    headers:
+      Host: "{{interactsh-url}}"
+
+  - method: GET
+    path:
+      - "{{BaseURL}}"
+    
+    headers:
+      Host: "{{Hostname}}:{{interactsh-url}}"
+
+  - method: GET
+    path:
+      - "{{BaseURL}}"
+    
+    headers:
+      X-Forwarded-Host: "{{interactsh-url}}"
+
+    matchers:
+      - type: word
+        part: interactsh_protocol
+        words:
+          - "http"
+
+    extractors:
+      - type: kval
+        part: interactsh_request
+        kval:
+          - raw-request
