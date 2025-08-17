@@ -1,0 +1,36 @@
+id: bugbounty-ssrf
+
+info:
+  name: SSRF via Params (using Interactsh)
+  author: Justin Washek
+  severity: high
+  description: |
+    Fuzzes each query param value with Interactsh callback payload.
+  tags: ssrf,fuzzing,interactsh,bugbounty
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}"
+
+    payloads:
+      inject:
+        - "http://{{interactsh-url}}"
+
+    fuzzing:
+      - part: query
+        mode: single
+        fuzz:
+          - "http://{{interactsh-url}}"
+
+    matchers:
+      - type: word
+        part: interactsh_protocol
+        words:
+          - "http"
+
+    extractors:
+      - type: kval
+        part: interactsh_request
+        kval:
+          - raw-request

